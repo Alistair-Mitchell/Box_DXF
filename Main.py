@@ -6,7 +6,7 @@ msp = doc.modelspace()
 
 t = 3
 w = 155
-wn =4
+wn =5
 hwanted = 80
 h =hwanted+2*t
 hn =5
