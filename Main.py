@@ -8,19 +8,24 @@ doc = ezdxf.new('R2000')
 msp = doc.modelspace()
 
 # Setting up initial parameters for the box dimmension
-t = 3 #Thickness of material
-w = 150 #Internal Width of box
+t = 9 #Thickness of material
+w = 50 #Internal Width of box
 wn =5 #Number of fingers along the width
-h1 = 100 #Internal Height of box
+h1 = 50 #Internal Height of box
 h2 =h1+2*t #This is used as a fiddle factor cos geometry
-hn =5 #Number of fingers along the Height
+h2n =5 #Number of fingers along the Height
 d = 50 #Internal Depth of the box
-d2 = 40+2*t #This is used as a a fiddle factor cos geometry
-dn =5 #Number of fingers along the Depth
-bufferx = w +15 +d # This is used so that all coordinates are positive
-buffery = h1 + 15 + d # As above
+d2 = d+2*t #This is used as a a fiddle factor cos geometry
+d2n =5 #Number of fingers along the Depth
+W = [w,wn]
+H = [h2,h2n]
+D = [d2,d2n]
+bufferx = w +3*t +d2 # This is used so that all coordinates are positive
+buffery = h2 + t + d2 # As above
 buffer = 50 # Padding
-
+x2 = w+2*t
+y2 = -h2-2*t
+disp = 1
 #Stepmaker is the brains of the operation, makes the 'steps' or castleations
 #that become the fingers
 def StepMaker(StartX,StartY,Length,Number,XMajor,MajorMirror,MinorMirror,Add):
@@ -61,39 +66,21 @@ def StepMaker(StartX,StartY,Length,Number,XMajor,MajorMirror,MinorMirror,Add):
     else: #Returns the coordinates so they can be aggregated
         test=msp.add_lwpolyline(result)
 
-disp = 0
-#Really janky coordinate agregation (will be reworked)
-#StartX,StartY,Length,Number,XMajor,MajorMirror,MinorMirror,Add
-A1=StepMaker(0,0,w,wn,1,0,0,disp) #X, no flip
-A2=StepMaker(w,0,h2,hn,0,1,1,disp) #Y, mirror on x and y
-A3=StepMaker(w,-h2,w,wn,1,1,1,disp) #x, mirror on x and y
-A4=StepMaker(0,-h2,h2,hn,0,0,0,disp)# y no flip
+def BoxMaker(x,y,dx,dy,X_In,Y_In):
+    A1=StepMaker(x,y,dx[0],dx[1],1,X_In,0,disp) #X, no flip
+    A2=StepMaker(x+dx[0],y,dy[0],dy[1],0,Y_In,1,disp) #Y, mirror on x and y
+    A3=StepMaker(x+dx[0],y-dy[0],dx[0],dx[1],1,not X_In,1,disp) #x, mirror on x and y
+    A4=StepMaker(x,y-dy[0],dy[0],dy[1],0,not Y_In,0,disp)# y no flip
+    if disp == 0:
+        source = A1+A2+A3+A4
+        i1 =msp.add_lwpolyline(source)
+        i1.close()
 
-y2 = -h2-2*t # Defining a new starting point
-B1=StepMaker(0,y2,w,wn,1,1,0,disp) #x  mirror on x
-B2=StepMaker(w,y2,d,dn,0,1,1,disp) # y mirror on x and y
-B3=StepMaker(w,y2-d,w,wn,1,0,1,disp) # x mirror on y
-B4=StepMaker(0,y2-d,d,dn,0,0,0,disp) # y no flip
+#OriginX,OriginY,XDim,YDim,XInwards?,Yinwards?
+BoxMaker(0,0,W,H,0,1)
+BoxMaker(0,y2,W,D,1,1)
+BoxMaker(x2,0,D,H,0,0)
 
-x2 = w+2*t #Defining a new starting point
-C1=StepMaker(x2,0,d2,dn,1,0,0,disp)
-C2=StepMaker(x2+d2,0,h2,hn,0,0,1,disp)
-C3=StepMaker(x2+d2,-h2,d2,dn,1,1,1,disp)
-C4=StepMaker(x2,-h2,h2,hn,0,1,0,disp)
-
-
-if disp == 0:
-    source = A1+A2+A3+A4 #Piece 1 of 3 basically
-    source2 = B1+B2+B3+B4
-    source3 = C1+C2+C3+C4
-    i1 =msp.add_lwpolyline(source) #Writing the points to file as a joined line
-    i2 =msp.add_lwpolyline(source2)
-    i3 =msp.add_lwpolyline(source3)
-    i1.close() # Filling in any gaps between points
-    i2.close()
-    i3.close()
-
-#This bit is for future development
 
 # result = list(offset_vertices_2d(source, offset=0.5, closed=True))
 # final =msp.add_lwpolyline(result)
