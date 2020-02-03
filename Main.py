@@ -9,12 +9,12 @@ msp = doc.modelspace()
 
 # Setting up initial parameters for the box dimmension
 t = 3 #Thickness of material
-w = 40 #Internal Width of box
+w = 150 #Internal Width of box
 wn =5 #Number of fingers along the width
-h1 = 40 #Internal Height of box
+h1 = 100 #Internal Height of box
 h2 =h1+2*t #This is used as a fiddle factor cos geometry
 hn =5 #Number of fingers along the Height
-d = 40 #Internal Depth of the box
+d = 50 #Internal Depth of the box
 d2 = 40+2*t #This is used as a a fiddle factor cos geometry
 dn =5 #Number of fingers along the Depth
 bufferx = w +15 +d # This is used so that all coordinates are positive
@@ -61,34 +61,37 @@ def StepMaker(StartX,StartY,Length,Number,XMajor,MajorMirror,MinorMirror,Add):
     else: #Returns the coordinates so they can be aggregated
         test=msp.add_lwpolyline(result)
 
+disp = 0
 #Really janky coordinate agregation (will be reworked)
-A1=StepMaker(0,0,w,wn,1,0,0,0)
-A2=StepMaker(w,0,h2,hn,0,1,1,0)
-A3=StepMaker(w,-h2,w,wn,1,1,1,0)
-A4=StepMaker(0,-h2,h2,hn,0,0,0,0)
+#StartX,StartY,Length,Number,XMajor,MajorMirror,MinorMirror,Add
+A1=StepMaker(0,0,w,wn,1,0,0,disp) #X, no flip
+A2=StepMaker(w,0,h2,hn,0,1,1,disp) #Y, mirror on x and y
+A3=StepMaker(w,-h2,w,wn,1,1,1,disp) #x, mirror on x and y
+A4=StepMaker(0,-h2,h2,hn,0,0,0,disp)# y no flip
 
 y2 = -h2-2*t # Defining a new starting point
-B1=StepMaker(0,y2,w,wn,1,1,0,0)
-B2=StepMaker(w,y2,d,dn,0,1,1,0)
-B3=StepMaker(w,y2-d,w,wn,1,0,1,0)
-B4=StepMaker(0,y2-d,d,dn,0,0,0,0)
+B1=StepMaker(0,y2,w,wn,1,1,0,disp) #x  mirror on x
+B2=StepMaker(w,y2,d,dn,0,1,1,disp) # y mirror on x and y
+B3=StepMaker(w,y2-d,w,wn,1,0,1,disp) # x mirror on y
+B4=StepMaker(0,y2-d,d,dn,0,0,0,disp) # y no flip
 
 x2 = w+2*t #Defining a new starting point
-C1=StepMaker(x2,0,d2,dn,1,0,0,0)
-C2=StepMaker(x2+d2,0,h2,hn,0,0,1,0)
-C3=StepMaker(x2+d2,-h2,d2,dn,1,1,1,0)
-C4=StepMaker(x2,-h2,h2,hn,0,1,0,0)
+C1=StepMaker(x2,0,d2,dn,1,0,0,disp)
+C2=StepMaker(x2+d2,0,h2,hn,0,0,1,disp)
+C3=StepMaker(x2+d2,-h2,d2,dn,1,1,1,disp)
+C4=StepMaker(x2,-h2,h2,hn,0,1,0,disp)
 
-source = A1+A2+A3+A4 #Piece 1 of 3 basically
-source2 = B1+B2+B3+B4
-source3 = C1+C2+C3+C4
 
-i1 =msp.add_lwpolyline(source) #Writing the points to file as a joined line
-i2 =msp.add_lwpolyline(source2)
-i3 =msp.add_lwpolyline(source3)
-i1.close() # Filling in any gaps between points
-i2.close()
-i3.close()
+if disp == 0:
+    source = A1+A2+A3+A4 #Piece 1 of 3 basically
+    source2 = B1+B2+B3+B4
+    source3 = C1+C2+C3+C4
+    i1 =msp.add_lwpolyline(source) #Writing the points to file as a joined line
+    i2 =msp.add_lwpolyline(source2)
+    i3 =msp.add_lwpolyline(source3)
+    i1.close() # Filling in any gaps between points
+    i2.close()
+    i3.close()
 
 #This bit is for future development
 
@@ -103,27 +106,28 @@ doc.saveas("lwpolyline1.dxf")
 
 #This bit is temporary and due a rework, dont really understand what ive done
 #but it works
-def Preview():
-    pygame.init()
-    black = (0,0,0)
-    green = (0,255,0)
-    white= (255,255,255)
-    red = (255,0,0)
-    blue = (0,0,255)
+if disp == 0:
+    def Preview():
+        pygame.init()
+        black = (0,0,0)
+        green = (0,255,0)
+        white= (255,255,255)
+        red = (255,0,0)
+        blue = (0,0,255)
 
-    gameDisplay = pygame.display.set_mode((bufferx+2*buffer,buffery+2*buffer))
-    gameDisplay.fill(black)
+        gameDisplay = pygame.display.set_mode((bufferx+2*buffer,buffery+2*buffer))
+        gameDisplay.fill(black)
 
 
-    pygame.draw.polygon(gameDisplay, blue, source)
-    pygame.draw.polygon(gameDisplay, green, source2)
-    pygame.draw.polygon(gameDisplay, red, source3)
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+        pygame.draw.polygon(gameDisplay, blue, source)
+        pygame.draw.polygon(gameDisplay, green, source2)
+        pygame.draw.polygon(gameDisplay, red, source3)
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
 
-        pygame.display.update()
+            pygame.display.update()
 
-Preview()
+    Preview()
